@@ -52,7 +52,7 @@
     <h1>NÊMESIS • SINAL AO VIVO</h1>
     <div class="signal" id="signal">Carregando...</div>
     <div class="meta" id="price">--</div>
-    <div class="stats" id="stats">Simulações: 100.000.000 | Acertos: 0 | Erros: 0 | Assertividade: 0%</div>
+    <div class="stats" id="stats">Simulações: 0 | Acertos: 0 | Erros: 0 | Assertividade: 0%</div>
     <div class="log" id="log"></div>
   </div>
 
@@ -109,11 +109,11 @@
 
         const now = new Date().toLocaleTimeString();
         const total = acertos + erros;
-        const assertividade = total > 0 ? ((acertos / total) * 100).toFixed(2) : '0.00';
+        const assertividade = total > 0 ? ((acertos / total) * 100).toFixed(2) + '%' : '0.00%';
 
         document.getElementById('signal').innerHTML = `SINAL: <strong>${sinal}</strong>`;
         document.getElementById('price').innerText = `Último preço: ${closes[5].toFixed(2)} | ${now}`;
-        document.getElementById('stats').innerText = `Simulações: ${simCount.toLocaleString('pt-BR')} | Acertos: ${acertos} | Erros: ${erros} | Assertividade: ${assertividade}%`;
+        document.getElementById('stats').innerText = `Simulações: ${simCount.toString()} | Acertos: ${acertos} | Erros: ${erros} | Assertividade: ${assertividade}`;
 
         const log = document.getElementById('log');
         log.innerHTML = `<div>[${now}] Preços: ${closes.slice(1).join(', ')} | Sinal: ${sinal} | Resultado anterior: ${resultado || '---'}</div>` + log.innerHTML;
