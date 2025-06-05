@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nêmesis Realtime Signals</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: #f0f0f0;
+      margin: 0;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      padding: 2rem;
+      background-color: #1c1c1c;
+      border-radius: 1rem;
+      box-shadow: 0 0 10px rgba(255, 165, 0, 0.5);
+    }
+    h1 {
+      text-align: center;
+      color: #ffa500;
+    }
+    .signal {
+      font-size: 2rem;
+      text-align: center;
+      margin: 2rem 0;
+    }
+    .meta {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #ccc;
+    }
+    .log {
+      margin-top: 2rem;
+      font-size: 0.85rem;
+      background: #222;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .gain { color: #00ff00; }
+    .loss { color: #ff4040; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>NÊMESIS • SINAL AO VIVO</h1>
+    <div class="signal" id="signal">Carregando...</div>
+    <div class="meta" id="price">--</div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <script>
+    let simCount = 10000;
+    let streak = [];
+
+    function gerarSinal(prices) {
+      const diff = prices[4] - prices[3];
+      let resultado = (Math.random() * (diff > 0 ? 1 : -1)) + diff;
+      if (streak.slice(-3).every(r => r === 'perca')) resultado += 0.5;
+      const sinal = resultado > 0 ? 'ACIMA' : 'ABAIXO';
+      return sinal;
+    }
+
+    async function fetchData() {
+      try {
+        const res = await fetch('https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1s&limit=5');
+        const data = await res.json();
+        const closes = data.map(d => parseFloat(d[4]));
+        const sinal = gerarSinal(closes);
+
+        const now = new Date().toLocaleTimeString();
+        document.getElementById('signal').innerHTML = `SINAL: <strong>${sinal}</strong>`;
+        document.getElementById('price').innerText = `Último preço: ${closes[4].toFixed(2)} | ${now}`;
+
+        const log = document.getElementById('log');
+        log.innerHTML = `<div>[${now}] Preços: ${closes.join(', ')} | Sinal: ${sinal}</div>` + log.innerHTML;
+      } catch (e) {
+        document.getElementById('signal').innerText = 'Erro ao carregar sinal';
+      }
+    }
+
+    setInterval(fetchData, 1000);
+  </script>
+</body>
+</html>
