@@ -29,7 +29,7 @@
       text-align: center;
       margin: 2rem 0;
     }
-    .meta {
+    .meta, .stats {
       text-align: center;
       font-size: 0.9rem;
       color: #ccc;
@@ -52,34 +52,65 @@
     <h1>NÊMESIS • SINAL AO VIVO</h1>
     <div class="signal" id="signal">Carregando...</div>
     <div class="meta" id="price">--</div>
+    <div class="stats" id="stats">Simulações: 100.000.000 | Acertos: 0 | Erros: 0</div>
     <div class="log" id="log"></div>
   </div>
 
   <script>
-    let simCount = 10000;
-    let streak = [];
+    let simCount = 100000000;
+    let acertos = 0;
+    let erros = 0;
+    let ultimoSinal = null;
+    let ultimoResultado = null;
 
     function gerarSinal(prices) {
-      const diff = prices[4] - prices[3];
-      let resultado = (Math.random() * (diff > 0 ? 1 : -1)) + diff;
-      if (streak.slice(-3).every(r => r === 'perca')) resultado += 0.5;
-      const sinal = resultado > 0 ? 'ACIMA' : 'ABAIXO';
-      return sinal;
+      let positivos = 0;
+      for (let i = 0; i < simCount; i++) {
+        const rand = Math.random();
+        const sim = prices[4] + (rand - 0.5) * (prices[4] * 0.0001);
+        if (sim > prices[4]) positivos++;
+      }
+      return positivos > simCount / 2 ? 'ACIMA' : 'ABAIXO';
+    }
+
+    function validarResultado(sinalAnterior, precoAnterior, precoAtual) {
+      if (!sinalAnterior || !precoAnterior || !precoAtual) return null;
+      if (sinalAnterior === 'ACIMA') return precoAtual > precoAnterior ? 'acerto' : 'erro';
+      if (sinalAnterior === 'ABAIXO') return precoAtual < precoAnterior ? 'acerto' : 'erro';
+      return null;
+    }
+
+    function ajustarSimulacoes(resultado) {
+      if (resultado === 'acerto') {
+        simCount *= 2;
+        acertos++;
+      } else if (resultado === 'erro') {
+        simCount *= 4;
+        erros++;
+      }
+      if (simCount > 1e50) simCount = 1e50;
     }
 
     async function fetchData() {
       try {
-        const res = await fetch('https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1s&limit=5');
+        const res = await fetch('https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1s&limit=6');
         const data = await res.json();
         const closes = data.map(d => parseFloat(d[4]));
+
+        const resultado = validarResultado(ultimoSinal, closes[4], closes[5]);
+        ajustarSimulacoes(resultado);
+        ultimoResultado = resultado;
+
         const sinal = gerarSinal(closes);
+        ultimoSinal = sinal;
 
         const now = new Date().toLocaleTimeString();
         document.getElementById('signal').innerHTML = `SINAL: <strong>${sinal}</strong>`;
-        document.getElementById('price').innerText = `Último preço: ${closes[4].toFixed(2)} | ${now}`;
+        document.getElementById('price').innerText = `Último preço: ${closes[5].toFixed(2)} | ${now}`;
+        document.getElementById('stats').innerText = `Simulações: ${simCount.toLocaleString('pt-BR')} | Acertos: ${acertos} | Erros: ${erros}`;
 
         const log = document.getElementById('log');
-        log.innerHTML = `<div>[${now}] Preços: ${closes.join(', ')} | Sinal: ${sinal}</div>` + log.innerHTML;
+        log.innerHTML = `<div>[${now}] Preços: ${closes.slice(1).join(', ')} | Sinal: ${sinal} | Resultado anterior: ${resultado || '---'}</div>` + log.innerHTML;
       } catch (e) {
         document.getElementById('signal').innerText = 'Erro ao carregar sinal';
       }
