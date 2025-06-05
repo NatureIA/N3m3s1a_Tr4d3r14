@@ -52,7 +52,7 @@
     <h1>NÊMESIS • SINAL AO VIVO</h1>
     <div class="signal" id="signal">Carregando...</div>
     <div class="meta" id="price">--</div>
-    <div class="stats" id="stats">Simulações: 100.000.000 | Acertos: 0 | Erros: 0</div>
+    <div class="stats" id="stats">Simulações: 100.000.000 | Acertos: 0 | Erros: 0 | Assertividade: 0%</div>
     <div class="log" id="log"></div>
   </div>
 
@@ -62,6 +62,7 @@
     let erros = 0;
     let ultimoSinal = null;
     let ultimoResultado = null;
+    let running = false;
 
     function gerarSinal(prices) {
       let positivos = 0;
@@ -92,6 +93,8 @@
     }
 
     async function fetchData() {
+      if (running) return;
+      running = true;
       try {
         const res = await fetch('https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1s&limit=6');
         const data = await res.json();
@@ -105,18 +108,25 @@
         ultimoSinal = sinal;
 
         const now = new Date().toLocaleTimeString();
+        const total = acertos + erros;
+        const assertividade = total > 0 ? ((acertos / total) * 100).toFixed(2) : '0.00';
+
         document.getElementById('signal').innerHTML = `SINAL: <strong>${sinal}</strong>`;
         document.getElementById('price').innerText = `Último preço: ${closes[5].toFixed(2)} | ${now}`;
-        document.getElementById('stats').innerText = `Simulações: ${simCount.toLocaleString('pt-BR')} | Acertos: ${acertos} | Erros: ${erros}`;
+        document.getElementById('stats').innerText = `Simulações: ${simCount.toLocaleString('pt-BR')} | Acertos: ${acertos} | Erros: ${erros} | Assertividade: ${assertividade}%`;
 
         const log = document.getElementById('log');
         log.innerHTML = `<div>[${now}] Preços: ${closes.slice(1).join(', ')} | Sinal: ${sinal} | Resultado anterior: ${resultado || '---'}</div>` + log.innerHTML;
       } catch (e) {
         document.getElementById('signal').innerText = 'Erro ao carregar sinal';
       }
+      running = false;
     }
 
-    setInterval(fetchData, 1000);
+    (function loop() {
+      fetchData();
+      setTimeout(loop, 1000);
+    })();
   </script>
 </body>
 </html>
